@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/mateusz/Takie tam aplikacje i skrypty/cpp/NaStudia/TP/Projekt4/build",
+  "command": "/usr/bin/c++     -g   -std=gnu++17 -o CMakeFiles/Projekt4.dir/main.cpp.o -c \"/home/mateusz/Takie tam aplikacje i skrypty/cpp/NaStudia/TP/Projekt4/main.cpp\"",
+  "file": "/home/mateusz/Takie tam aplikacje i skrypty/cpp/NaStudia/TP/Projekt4/main.cpp"
+}
+]
