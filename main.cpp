@@ -22,34 +22,96 @@ class CollidingObject : public sf::Drawable, public sf::Transformable
 {
 private:
     bool collided = false;
-    sf::Vector2f velocity = { 0, 0 };
+    sf::Vector2f velocity = {0, 0};
     const double maxSpeed = 100;
+    sf::Color color;
 
     bool applyVelocity(double factor)
     {
         sf::Vector2f factoredVector(velocity.x * factor, velocity.y * factor);
 
-        return setPosition(getPosition() + factoredVector);
+        return moveTo(getPosition() + factoredVector);
     }
 
 public:
     virtual bool contains(sf::Vector2f) const = 0;
     virtual std::vector<sf::Vector2f> getBoundPoints() const = 0;
     virtual bool canBePicked() const = 0;
-    virtual bool setPosition(const sf::Vector2f &newPos) = 0;
+
+    void setColor(sf::Color color)
+    {
+        this->color = color;
+    }
+
+    sf::Color getColor() const
+    {
+        return color;
+    }
+
+    bool moveTo(const sf::Vector2f &newPos)
+    {
+        auto currentPositionCopy = getPosition();
+
+        Transformable::setPosition(newPos);
+
+        for (CollidingObject *object : CollidingObject::All)
+        {
+            if (object == this)
+                continue;
+            auto points = object->getBoundPoints();
+
+            if (this->testCollisionWith(*object))
+            {
+                this->collision();
+                object->collision();
+
+                Transformable::setPosition(currentPositionCopy);
+                return false;
+            }
+        }
+
+        bool XRest = false, YRest = false;
+
+        for (sf::Vector2f point : getBoundPoints())
+        {
+            if (XRest && YRest)
+                break;
+
+            if (!XRest)
+            {
+                if (point.x < simulationBounds.left || (point.x > (simulationBounds.left + simulationBounds.width)))
+                {
+                    XRest = true;
+                    velocity.x = 0;
+                }
+            }
+            if (!YRest)
+            {
+                if (point.y < simulationBounds.top || ((point.y) > (simulationBounds.top + simulationBounds.height)))
+                {
+                    YRest = true;
+                    velocity.y = 0;
+                }
+            }
+        }
+
+        Transformable::setPosition(sf::Vector2f((XRest) ? currentPositionCopy.x : newPos.x, (YRest) ? currentPositionCopy.y : newPos.y));
+
+        return (!XRest) && (!YRest);
+    }
 
     void tick()
     {
         for (int i = 1; i <= 10; i++)
         {
             if (!applyVelocity(0.1))
-                {
-                    velocity = {0 , 0};
-                    break;
-                }
+            {
+                velocity = {0, 0};
+                break;
+            }
         }
 
-        velocity = { velocity.x * .99f, velocity.y * .99f }; 
+        velocity = {velocity.x * .99f, velocity.y * .99f};
     }
 
     sf::Vector2f getVelocity()
@@ -65,8 +127,10 @@ public:
     void addVelocity(sf::Vector2f translation)
     {
         velocity += translation;
-        if (std::abs(velocity.x) > maxSpeed) velocity.x = ((velocity.x < 0) ? -1 : 1) * maxSpeed;
-        else if (std::abs(velocity.y) > maxSpeed) velocity.y = ((velocity.y < 0) ? -1 : 1) * maxSpeed;
+        if (std::abs(velocity.x) > maxSpeed)
+            velocity.x = ((velocity.x < 0) ? -1 : 1) * maxSpeed;
+        else if (std::abs(velocity.y) > maxSpeed)
+            velocity.y = ((velocity.y < 0) ? -1 : 1) * maxSpeed;
     }
 
     void collision()
@@ -84,14 +148,14 @@ public:
         collided = false;
     }
 
-    bool testCollisionWith(CollidingObject& obj)
+    bool testCollisionWith(CollidingObject &obj)
     {
-        for (auto point: getBoundPoints())
+        for (auto point : getBoundPoints())
             if (obj.contains(point))
             {
                 return true;
             }
-        
+
         return false;
     }
 
@@ -104,7 +168,7 @@ class LiftGrabber : public sf::Drawable
 {
 private:
     sf::Vector2f position = {grabberBounds.left, grabberBounds.top};
-    sf::Vector2f velocity = { 0, 0 };
+    sf::Vector2f velocity = {0, 0};
     const double maxSpeed = 2;
 
     CollidingObject *grabbedObject = nullptr;
@@ -119,8 +183,7 @@ private:
         }
         else
         {
-            grabbedObject->setPosition(grabbedObject->getPosition() + factoredVector);
-            if (!grabbedObject->hasCollided())
+            if (grabbedObject->moveTo(grabbedObject->getPosition() + factoredVector))
             {
                 return setPosition(getPosition() + factoredVector);
             }
@@ -167,7 +230,7 @@ public:
                 break;
         }
 
-        velocity = { velocity.x * .9f, velocity.y * .9f }; 
+        velocity = {velocity.x * .9f, velocity.y * .9f};
     }
 
     sf::Vector2f getVelocity()
@@ -183,8 +246,10 @@ public:
     void addVelocity(sf::Vector2f translation)
     {
         velocity += translation;
-        if (std::abs(velocity.x) > maxSpeed) velocity.x = ((velocity.x < 0) ? -1 : 1) * maxSpeed;
-        else if (std::abs(velocity.y) > maxSpeed) velocity.y = ((velocity.y < 0) ? -1 : 1) * maxSpeed;
+        if (std::abs(velocity.x) > maxSpeed)
+            velocity.x = ((velocity.x < 0) ? -1 : 1) * maxSpeed;
+        else if (std::abs(velocity.y) > maxSpeed)
+            velocity.y = ((velocity.y < 0) ? -1 : 1) * maxSpeed;
     }
 
     bool setPosition(sf::Vector2f newPos)
@@ -198,7 +263,8 @@ public:
         if (newPos.y < grabberBounds.top)
             newPos.y = grabberBounds.top;
 
-        if (position.x == newPos.x && position.y == newPos.y) return false;
+        if (position.x == newPos.x && position.y == newPos.y)
+            return false;
 
         position = std::move(newPos);
         return true;
@@ -234,49 +300,6 @@ public:
     {
     }
 
-    bool setPosition(const sf::Vector2f &newPos) override
-    {
-        auto currentPositionCopy = getPosition();
-
-        Transformable::setPosition(newPos);
-
-        for (CollidingObject *object : CollidingObject::All)
-        {
-            if (object == this)
-                continue;
-            auto points = object->getBoundPoints();
-
-            if (this->testCollisionWith(*object))
-            {
-                this->collision();
-                object->collision();
-
-                Transformable::setPosition(currentPositionCopy);
-                return false;
-            }
-        }
-
-        Transformable::setPosition(currentPositionCopy);
-
-        auto position = newPos;
-
-        if (position.x + getSize().x > (simulationBounds.left + simulationBounds.width))
-            position.x = simulationBounds.left + simulationBounds.width;
-        if ((position.y + getSize().y) > (simulationBounds.top + simulationBounds.height))
-        {
-            position.y = simulationBounds.top + simulationBounds.height - getSize().y;
-            setVelocity({getVelocity().x * .5f, 0});
-        }
-        if (position.x < simulationBounds.left)
-            position.x = simulationBounds.left;
-        if (position.y < simulationBounds.top)
-            position.y = simulationBounds.top;
-
-        Transformable::setPosition(position);
-
-        return true;
-    }
-
     sf::Vector2f getSize() const
     {
         return size;
@@ -289,7 +312,10 @@ public:
 
     virtual bool contains(sf::Vector2f point) const
     {
-        return sf::FloatRect(getPosition(), getSize()).contains(point);
+        return ((point.x >= getPosition().x)) &&
+               ((point.x <= getPosition().x + getSize().x)) &&
+               ((point.y >= getPosition().y)) &&
+               ((point.y <= getPosition().y + getSize().y));
     }
 
     virtual std::vector<sf::Vector2f> getBoundPoints() const
@@ -298,7 +324,7 @@ public:
             getPosition(),
             getPosition() + sf::Vector2f(getSize().x, 0),
             getPosition() + sf::Vector2f(0, getSize().y),
-            getPosition() + getSize()};
+            getPosition() + sf::Vector2f(getSize().x, getSize().y)};
     }
 
     virtual inline bool canBePicked() const
@@ -308,14 +334,12 @@ public:
 
     virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const
     {
-        states.transform *= getTransform();
-
         sf::RectangleShape rect;
-        rect.setPosition({0, 0});
+        rect.setPosition(getPosition());
         rect.setSize(getSize());
-        rect.setFillColor(sf::Color::Red);
+        rect.setFillColor(getColor());
 
-        target.draw(rect, states);
+        target.draw(rect);
     }
 };
 
@@ -327,49 +351,6 @@ private:
 public:
     CircularObject()
     {
-    }
-
-    bool setPosition(const sf::Vector2f &newPos) override
-    {
-        auto currentPositionCopy = getPosition();
-
-        Transformable::setPosition(newPos);
-
-        for (CollidingObject *object : CollidingObject::All)
-        {
-            if (object == this)
-                continue;
-            auto points = object->getBoundPoints();
-
-            if (this->testCollisionWith(*object))
-            {
-                this->collision();
-                object->collision();
-
-                Transformable::setPosition(currentPositionCopy);
-                return false;
-            }
-        }
-
-        Transformable::setPosition(currentPositionCopy);
-
-        auto position = newPos;
-
-        if (position.x + getRadius() > (simulationBounds.left + simulationBounds.width))
-            position.x = simulationBounds.left + simulationBounds.width;
-        if ((position.y + getRadius()) > (simulationBounds.top + simulationBounds.height))
-        {
-            position.y = simulationBounds.top + simulationBounds.height - getRadius();
-            setVelocity({getVelocity().x * .5f, 0});
-        }
-        if (position.x < simulationBounds.left)
-            position.x = simulationBounds.left;
-        if (position.y < simulationBounds.top)
-            position.y = simulationBounds.top;
-
-        Transformable::setPosition(position);
-
-        return true;
     }
 
     double getRadius() const
@@ -384,15 +365,17 @@ public:
 
     virtual bool contains(sf::Vector2f point) const
     {
-        return std::abs(point.x - getPosition().x) < radius && std::abs(getPosition().y - point.y) < radius;
+        auto newVec = getPosition() - point;
+        return std::sqrt((newVec.x * newVec.x) + (newVec.y * newVec.y)) <= radius;
     }
 
     virtual std::vector<sf::Vector2f> getBoundPoints() const
     {
         std::vector<sf::Vector2f> points;
-        for (double angle = 0; angle < 2 * 3.14; angle += 2 * 3.14 / 20)
+        for (double angle = 0; angle < 2 * 3.14; angle += 2 * 3.14 / 40)
         {
-            points.push_back(sf::Vector2f(radius * std::cos(angle), radius * std::sin(radius)) + getPosition());
+            points.push_back(sf::Vector2f(getPosition().x + radius * std::cos(angle),
+                                          getPosition().y + std::sin(angle) * radius));
         }
 
         return points;
@@ -405,30 +388,66 @@ public:
 
     virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const
     {
-        states.transform *= getTransform();
-
         sf::CircleShape circle;
-        circle.setPosition({0, 0});
+        circle.setPosition(getPosition());
+        circle.setOrigin({radius, radius});
         circle.setRadius(getRadius());
-        circle.setFillColor(sf::Color::Red);
+        circle.setFillColor(getColor());
 
-        target.draw(circle, states);
+        target.draw(circle);
     }
 };
 
+#include <stdlib.h>
+#include <time.h>
+
+const sf::Color ObjectsColors[] = {sf::Color(0x264653ff), sf::Color(0x2a9d8fff), sf::Color(0xe9c46aff)};
+
+CollidingObject *randomObjectAt(sf::Vector2f &position)
+{
+    switch (rand() % 2)
+    {
+    case 0:
+    {
+        CircularObject *obj = new CircularObject;
+        if (!obj->moveTo(position))
+        {
+            delete obj;
+            return nullptr;
+        }
+        obj->setRadius(rand() % 10 + 20);
+        return obj;
+    }
+    case 1:
+    {
+        RectangularObject *obj = new RectangularObject;
+        if (!obj->moveTo(position))
+        {
+            delete obj;
+            return nullptr;
+        }
+        const int size = rand() % 20 + 30;
+        obj->setSize(sf::Vector2f(size, size));
+        return obj;
+    }
+    default:
+        return nullptr;
+    }
+}
+
 void addObject(sf::Vector2f position)
 {
-    if (simulationBounds.contains(position))
-    {
-        CircularObject* obj = new CircularObject;
-        obj->setPosition(position);
-        obj->setRadius(20);
-        CollidingObject::All.push_back(obj);
-    }
+    CollidingObject *obj = randomObjectAt(position);
+    if (obj == nullptr)
+        return;
+    obj->setColor(ObjectsColors[rand() % (sizeof(ObjectsColors) / sizeof(sf::Color))]);
+    CollidingObject::All.push_back(obj);
 }
 
 int main()
 {
+    srand(time(NULL));
+
     sf::RenderWindow window(sf::VideoMode(viewportSize.x, viewportSize.y), "Projekt 4", sf::Style::Default, sf::ContextSettings(0, 0, 3U, 1, 1, 0, false));
     window.setFramerateLimit(60);
 
@@ -488,7 +507,7 @@ int main()
         {
             liftGrabber.addVelocity(sf::Vector2f(0, 100 * prevTime));
         }
-        
+
         for (CollidingObject *object : CollidingObject::All)
         {
             object->resetCollision();
@@ -514,7 +533,7 @@ int main()
                         if (object->contains(liftGrabber.getPosition()) && object->canBePicked())
                         {
                             liftGrabber.grab(object);
-                            object->setVelocity({0 , 0});
+                            object->setVelocity({0, 0});
                         }
                     }
                 }
@@ -522,8 +541,9 @@ int main()
 
             grabbed = true;
         }
-        else grabbed = false;
-        
+        else
+            grabbed = false;
+
         for (CollidingObject *object : CollidingObject::All)
         {
             object->resetCollision();
