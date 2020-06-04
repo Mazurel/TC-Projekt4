@@ -1,4 +1,5 @@
 #include <vector>
+#include <array>
 #include <chrono>
 #include <thread>
 #include <optional>
@@ -18,15 +19,38 @@ const sf::FloatRect grabberBounds =
         simulationBounds.width - 40,
         simulationBounds.height - 40};
 
+class CollidingObject;
+
+struct MovingResult
+{
+    CollidingObject* collidedWith = nullptr;
+
+    bool verticalCollision = false;
+    bool horizontalCollision = false;
+
+    bool anyCollision()
+    {
+        return verticalCollision || horizontalCollision || collidedWith != nullptr;
+    }
+
+    MovingResult combine(MovingResult result)
+    {
+        verticalCollision = verticalCollision || result.verticalCollision;
+        horizontalCollision = horizontalCollision || result.horizontalCollision;
+        collidedWith = collidedWith == nullptr ? result.collidedWith : collidedWith;
+
+        return *this;
+    }
+};
+
 class CollidingObject : public sf::Drawable, public sf::Transformable
 {
 private:
-    bool collided = false;
     sf::Vector2f velocity = {0, 0};
-    const double maxSpeed = 100;
+    const double maxSpeed = 200;
     sf::Color color;
 
-    bool applyVelocity(double factor)
+    MovingResult applyVelocity(double factor)
     {
         sf::Vector2f factoredVector(velocity.x * factor, velocity.y * factor);
 
@@ -48,7 +72,7 @@ public:
         return color;
     }
 
-    bool moveTo(const sf::Vector2f &newPos)
+    MovingResult moveTo(const sf::Vector2f &newPos)
     {
         auto currentPositionCopy = getPosition();
 
@@ -58,15 +82,13 @@ public:
         {
             if (object == this)
                 continue;
-            auto points = object->getBoundPoints();
 
             if (this->testCollisionWith(*object))
             {
-                this->collision();
-                object->collision();
-
                 Transformable::setPosition(currentPositionCopy);
-                return false;
+                MovingResult result;
+                result.collidedWith = object;
+                return result;
             }
         }
 
@@ -97,21 +119,34 @@ public:
 
         Transformable::setPosition(sf::Vector2f((XRest) ? currentPositionCopy.x : newPos.x, (YRest) ? currentPositionCopy.y : newPos.y));
 
-        return (!XRest) && (!YRest);
+        MovingResult result;
+        result.horizontalCollision = XRest;
+        result.verticalCollision = YRest;
+
+        return result;
     }
 
     void tick()
     {
+        MovingResult result;
+
         for (int i = 1; i <= 10; i++)
         {
-            if (!applyVelocity(0.1))
+            result.combine(applyVelocity(0.1));
+            if (result.horizontalCollision) velocity.x = 0;
+            if (result.verticalCollision) velocity.y = 0;
+            if (velocity.y == 0 && velocity.x == 0)
             {
-                velocity = {0, 0};
                 break;
             }
         }
 
-        velocity = {velocity.x * .99f, velocity.y * .99f};
+        if (result.verticalCollision && !result.horizontalCollision)
+        {
+            velocity.x *= 0.93;
+        }
+
+        velocity = {velocity.x * .985f, velocity.y * .985f};
     }
 
     sf::Vector2f getVelocity()
@@ -131,21 +166,6 @@ public:
             velocity.x = ((velocity.x < 0) ? -1 : 1) * maxSpeed;
         else if (std::abs(velocity.y) > maxSpeed)
             velocity.y = ((velocity.y < 0) ? -1 : 1) * maxSpeed;
-    }
-
-    void collision()
-    {
-        collided = true;
-    }
-
-    bool hasCollided()
-    {
-        return collided;
-    }
-
-    void resetCollision()
-    {
-        collided = false;
     }
 
     bool testCollisionWith(CollidingObject &obj)
@@ -183,10 +203,13 @@ private:
         }
         else
         {
-            if (grabbedObject->moveTo(grabbedObject->getPosition() + factoredVector))
-            {
-                return setPosition(getPosition() + factoredVector);
-            }
+            auto result = grabbedObject->moveTo(grabbedObject->getPosition() + factoredVector);
+
+            if (result.collidedWith != nullptr) factoredVector = {0, 0};
+            if (result.horizontalCollision) factoredVector.x = 0;
+            if (result.verticalCollision) factoredVector.y = 0;
+
+            return setPosition(getPosition() + factoredVector);
         }
 
         return true;
@@ -320,11 +343,41 @@ public:
 
     virtual std::vector<sf::Vector2f> getBoundPoints() const
     {
-        return {
-            getPosition(),
-            getPosition() + sf::Vector2f(getSize().x, 0),
-            getPosition() + sf::Vector2f(0, getSize().y),
-            getPosition() + sf::Vector2f(getSize().x, getSize().y)};
+        auto position = getPosition();
+        std::vector<sf::Vector2f> points;
+
+        std::array<sf::Vector2f, 4> corners = {
+            position + sf::Vector2f(getSize().x, 0),
+            position + sf::Vector2f(getSize().x, getSize().y),
+            position + sf::Vector2f(0, getSize().y),
+            position
+        };
+
+        std::array<sf::Vector2f, 4> directions = {
+            sf::Vector2f(getSize().x / 5, 0),
+            sf::Vector2f(0, getSize().y / 5),
+            sf::Vector2f(-getSize().x / 5, 0),
+            sf::Vector2f(0, -getSize().y / 5)
+        };
+
+        int i = 0;
+        sf::Vector2f p = position;
+        while (i < 4)
+        {
+            if (std::abs(p.x - corners[i].x) < 2 && std::abs(p.y - corners[i].y) < 2)
+            {
+                p = corners[i];
+                i++;
+            }
+            else
+            {
+                p += directions[i];
+            }
+
+            points.push_back(p);
+        }
+
+        return points;
     }
 
     virtual inline bool canBePicked() const
@@ -366,13 +419,13 @@ public:
     virtual bool contains(sf::Vector2f point) const
     {
         auto newVec = getPosition() - point;
-        return std::sqrt((newVec.x * newVec.x) + (newVec.y * newVec.y)) <= radius;
+        return ((newVec.x * newVec.x) + (newVec.y * newVec.y)) <= radius * radius;
     }
 
     virtual std::vector<sf::Vector2f> getBoundPoints() const
     {
         std::vector<sf::Vector2f> points;
-        for (double angle = 0; angle < 2 * 3.14; angle += 2 * 3.14 / 40)
+        for (double angle = 0; angle < 2 * 3.14; angle += 2 * 3.14 / (2 * 3.14 * radius / 2))
         {
             points.push_back(sf::Vector2f(getPosition().x + radius * std::cos(angle),
                                           getPosition().y + std::sin(angle) * radius));
@@ -396,6 +449,7 @@ public:
 
         target.draw(circle);
     }
+
 };
 
 #include <stdlib.h>
@@ -410,24 +464,25 @@ CollidingObject *randomObjectAt(sf::Vector2f &position)
     case 0:
     {
         CircularObject *obj = new CircularObject;
-        if (!obj->moveTo(position))
+        obj->setRadius(rand() % 10 + 20);
+        if (obj->moveTo(position).anyCollision())
         {
             delete obj;
             return nullptr;
         }
-        obj->setRadius(rand() % 10 + 20);
+
         return obj;
     }
     case 1:
     {
         RectangularObject *obj = new RectangularObject;
-        if (!obj->moveTo(position))
+        const int size = rand() % 20 + 30;
+        obj->setSize(sf::Vector2f(size, size));
+        if (obj->moveTo(position).anyCollision())
         {
             delete obj;
             return nullptr;
         }
-        const int size = rand() % 20 + 30;
-        obj->setSize(sf::Vector2f(size, size));
         return obj;
     }
     default:
@@ -448,7 +503,7 @@ int main()
 {
     srand(time(NULL));
 
-    sf::RenderWindow window(sf::VideoMode(viewportSize.x, viewportSize.y), "Projekt 4", sf::Style::Default, sf::ContextSettings(0, 0, 3U, 1, 1, 0, false));
+    sf::RenderWindow window(sf::VideoMode(viewportSize.x, viewportSize.y), "Projekt 4", sf::Style::Default, sf::ContextSettings(0, 0, 8U, 1, 1, 0, false));
     window.setFramerateLimit(60);
 
     sf::RectangleShape background;
@@ -466,6 +521,8 @@ int main()
     LiftGrabber liftGrabber;
 
     auto prevTime = 0.0;
+    double timeSum = 0.0;
+    unsigned int frameCount = 0;
 
     while (window.isOpen())
     {
@@ -486,31 +543,33 @@ int main()
             {
                 if (event.mouseButton.button == sf::Mouse::Left)
                 {
-                    addObject(sf::Vector2f(event.mouseButton.x, event.mouseButton.y));
+                    auto windowSize = window.getSize();
+
+                    addObject(sf::Vector2f((viewportSize.x / windowSize.x) * event.mouseButton.x, 
+                                          (viewportSize.y / windowSize.y) * event.mouseButton.y));
                 }
             }
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
         {
-            liftGrabber.addVelocity(sf::Vector2f(100 * prevTime, 0));
+            liftGrabber.addVelocity(sf::Vector2f(10 * prevTime, 0));
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
         {
-            liftGrabber.addVelocity(sf::Vector2f(-100 * prevTime, 0));
+            liftGrabber.addVelocity(sf::Vector2f(-10 * prevTime, 0));
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
         {
-            liftGrabber.addVelocity(sf::Vector2f(0, -100 * prevTime));
+            liftGrabber.addVelocity(sf::Vector2f(0, -10 * prevTime));
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
         {
-            liftGrabber.addVelocity(sf::Vector2f(0, 100 * prevTime));
+            liftGrabber.addVelocity(sf::Vector2f(0, 10 * prevTime));
         }
 
         for (CollidingObject *object : CollidingObject::All)
         {
-            object->resetCollision();
             if (object != liftGrabber.currentlyGrabbed())
             {
                 object->addVelocity(sf::Vector2f(0, 5 * prevTime));
@@ -546,7 +605,6 @@ int main()
 
         for (CollidingObject *object : CollidingObject::All)
         {
-            object->resetCollision();
             if (object != liftGrabber.currentlyGrabbed())
             {
                 object->tick();
@@ -567,7 +625,14 @@ int main()
         window.display();
 
         prevTime = (std::chrono::system_clock::now() - begin).count() / 1000000000.0;
-        std::cout << prevTime << std::endl;
+        timeSum += prevTime;
+        frameCount++;
+        if (timeSum >= 1)
+        {
+            std::cout << "FPS:" << frameCount << std::endl;
+            timeSum = 0;
+            frameCount = 0;
+        }
     }
 
     return 0;
