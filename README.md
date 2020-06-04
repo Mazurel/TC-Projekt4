@@ -1,12 +1,26 @@
 # TC-Projekt4
 
-# Kompilacja
+# Uwagi
 
-## Wymagania
-- sfml
-- cmake
+Program korzysta z biblioteki sfml i języka programowania c++11.
 
-## Linux
+# Kompilacja i instalacja
+
+## Gnu/Linux
+
+Pobierz i zainstaluj sfml, cmake, git i kompilator c++ (najlepiej gcc).
+Np.:
+- Ubuntu/Debian:
+```bash
+sudo apt install git cmake libsfml-dev
+```
+- Arch:
+```bash
+sudo pacman -S git cmake sfml
+```
+
+Instrukcja kompilacji:
+
 ```bash
 git clone https://github.com/Mazurel/TC-Projekt4
 cd TC-Projekt4
@@ -17,12 +31,12 @@ make && ./Projekt4
 
 ## Windows
 
-> Wersja opisana dla visual stduio 2019
+> Wersja opisana dla visual studio 2019
 
 1. Pobierz cmake oraz sfml dla Visual C++ 15 (2017).
 2. Sfml zapisz w folderze najlepiej od razu na dysku, tj D:\sfml-2.5.1\
 3. Pobierz repozytorium https://github.com/Mazurel/TC-Projekt4 .
-4. Otwórz cmake-gui, jakoi projekt wybierz folder z repozytorium, miejsce budowania gdziekolwiek.
+4. Otwórz cmake-gui, jako projekt wybierz folder z repozytorium, miejsce budowania ustaw na gdziekolwiek.
 5. Naciśnij konfiguruj, wybierz visual studio i kontynuuj.
 6. Naciśnij generuj i zamknij program.
 7. W folderze z wygenerowanym projektem, otwórz projekt sln w visual studio.
