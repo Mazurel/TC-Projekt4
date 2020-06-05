@@ -443,7 +443,7 @@ public:
     {
         sf::CircleShape circle;
         circle.setPosition(getPosition());
-        circle.setOrigin({radius, radius});
+        circle.setOrigin(sf::Vector2f(radius, radius));
         circle.setRadius(getRadius());
         circle.setFillColor(getColor());
 
@@ -503,11 +503,8 @@ int main()
 {
     srand(time(NULL));
 
-<<<<<<< HEAD
     sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Projekt 4", sf::Style::Default, sf::ContextSettings(0, 0, 8U, 1, 1, 0, false));
-=======
-    sf::RenderWindow window(sf::VideoMode(viewportSize.x, viewportSize.y), "Projekt 4", sf::Style::Default, sf::ContextSettings(0, 0, 8U, 1, 1, 0, false));
->>>>>>> f28a4c1891e8bb999377c41d1ca0b9ccf225c856
+    
     window.setFramerateLimit(60);
     window.setView(sf::View(sf::FloatRect(sf::Vector2f(0, 0), viewportSize)));
 
