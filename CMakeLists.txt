@@ -3,7 +3,7 @@ project(Pojekt4)
 
 if (WIN32)
     set(SFML_LOKALIZACJA "C:\\Sfml-2.5.1")
-    find_package(SFML COMPONENTS graphics window system HINTING ${SFML_LOKALIZACJA})
+    find_package(SFML COMPONENTS graphics window system HINTS ${SFML_LOKALIZACJA})
 else()
     find_package(SFML COMPONENTS graphics window system)
 endif()
