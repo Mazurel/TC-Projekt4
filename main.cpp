@@ -503,7 +503,11 @@ int main()
 {
     srand(time(NULL));
 
+<<<<<<< HEAD
     sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Projekt 4", sf::Style::Default, sf::ContextSettings(0, 0, 8U, 1, 1, 0, false));
+=======
+    sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Projekt 4", sf::Style::Default);
+>>>>>>> 553dbc8... Windows patch
     
     window.setFramerateLimit(60);
     window.setView(sf::View(sf::FloatRect(sf::Vector2f(0, 0), viewportSize)));

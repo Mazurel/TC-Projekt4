@@ -33,6 +33,17 @@ make && ./Projekt4
 
 > Wersja opisana dla visual studio 2019
 
+<<<<<<< HEAD
+=======
+**Wersja dla visual studio z cmake**
+1. Pobierz sfml dla Visual Studio C++ 15 (2017).
+2. Zapisz wypakowany folder najlepiej jako D:\sfml-2.5.1\
+3. Otwórz repozytorium https://github.com/Mazurel/TC-Projekt4 w visual studio.
+4. (opcjonalnie) Zmodyfikuj ustawienie SFML_LOKALIZACJA w pliku CMakeLists.txt na lokzalizacje sfml.
+5. Włącz program.
+
+**Wersja dla cmake-gui**
+>>>>>>> 553dbc8... Windows patch
 1. Pobierz cmake oraz sfml dla Visual C++ 15 (2017).
 2. Sfml zapisz w folderze najlepiej od razu na dysku, tj D:\sfml-2.5.1\
 3. Pobierz repozytorium https://github.com/Mazurel/TC-Projekt4 .

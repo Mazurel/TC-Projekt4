@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.17)
 project(Pojekt4)
 
-find_package(SFML COMPONENTS graphics window system)
+if (WIN32)
+    set(SFML_LOKALIZACJA "C:\\Sfml-2.5.1")
+    find_package(SFML COMPONENTS graphics window system HINTING ${SFML_LOKALIZACJA})
+else()
+    find_package(SFML COMPONENTS graphics window system)
+endif()
 
 set(CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
