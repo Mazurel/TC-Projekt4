@@ -4,6 +4,10 @@
 
 Program korzysta z biblioteki sfml i języka programowania c++11.
 
+# Obsługa
+Strzałki sterują chwytem dźwigu.
+Lewym przyciskiem myszy umieszczany jest obiekt fizyczny.
+
 # Kompilacja i instalacja
 
 ## Gnu/Linux
