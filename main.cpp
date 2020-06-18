@@ -33,6 +33,7 @@ struct MovingResult
         return verticalCollision || horizontalCollision || collidedWith != nullptr;
     }
 
+    // Combines two moving results 
     MovingResult combine(MovingResult result)
     {
         verticalCollision = verticalCollision || result.verticalCollision;
@@ -426,9 +427,10 @@ public:
     {
         std::vector<sf::Vector2f> points;
         for (double angle = 0; angle < 2 * 3.14; angle += 2 * 3.14 / (2 * 3.14 * radius / 2))
-        {
-            points.push_back(sf::Vector2f(getPosition().x + radius * std::cos(angle),
-                                          getPosition().y + std::sin(angle) * radius));
+	{
+		points.push_back(sf::Vector2f(getPosition().x + radius * std::cos(angle),
+					getPosition().y + radius * std::sin(angle))
+				);
         }
 
         return points;
@@ -504,7 +506,7 @@ int main()
     srand(time(NULL));
 
     sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Projekt 4", sf::Style::Default);
-    
+        
     window.setFramerateLimit(60);
     window.setView(sf::View(sf::FloatRect(sf::Vector2f(0, 0), viewportSize)));
 
@@ -626,7 +628,7 @@ int main()
 
         window.display();
 
-        prevTime = (std::chrono::system_clock::now() - begin).count() / 1000000000.0;
+        prevTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - begin).count() / 1000000.0;
         timeSum += prevTime;
         frameCount++;
         if (timeSum >= 1)
