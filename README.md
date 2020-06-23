@@ -1,11 +1,12 @@
-# TP-Projekt4
+# Projekt 4 z technik programowania
 
 # Uwagi
 
-Program korzysta z biblioteki sfml i języka programowania c++11.
+Program korzysta z biblioteki sfml i języka programowania c++ w standarcie 11.
 
 # Obsługa
 Strzałki sterują chwytem dźwigu.
+Spacja chwyta element o ile jest on kwadratem (zgodnie z zaleceniem). 
 Lewym przyciskiem myszy umieszczany jest obiekt fizyczny.
 
 # Kompilacja i instalacja
@@ -39,9 +40,10 @@ make && ./Projekt4
 
 **Wersja dla visual studio z cmake**
 1. Pobierz sfml dla Visual Studio C++ 15 (2017).
-2. Zapisz wypakowany folder najlepiej jako D:\sfml-2.5.1\
+2. Zapisz wypakowany folder najlepiej jako C:\sfml-2.5.1\
 3. Otwórz repozytorium https://github.com/Mazurel/TC-Projekt4 w visual studio.
-4. (opcjonalnie) Zmodyfikuj ustawienie SFML_LOKALIZACJA w pliku CMakeLists.txt na lokzalizacje sfml.
+4. (opcjonalnie) Zmodyfikuj ustawienie SFML_LOKALIZACJA w pliku CMakeLists.txt na inną lokzalizacje sfml.
+5. Do folderu wyjściowego programu przekupiuj wszyskie biblioteki SFML z podfloderu bin (zwykle folder wyjściowy znajduje się w folderze out projektu).
 5. Włącz program.
 
 **Wersja dla cmake-gui**
